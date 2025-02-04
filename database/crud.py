@@ -5,10 +5,8 @@ __last_updated__='2025-02-04'
 
 from database import models, schemas, engine
 from sqlalchemy.orm import Session
-from sqlalchemy import text, select, update, and_
-from aws_utils.aws_utils import KeyManagementService
+from sqlalchemy import  select, and_
 from databases_companion.decorators import DatabaseDecorators, DTypeValidator
-from database.decorators import validate_str
 
 db_decorator = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
 dtype_validator = DTypeValidator()
