@@ -14,7 +14,7 @@ setup(
         'mysql-connector-python>=9.2.0',
         'pydantic>=2.10.6',
         'influxdb-client>=1.48.0',
-        'database_companion @ {ref = "main", git = "https://github.com/Envrio-hub/LibCompanion.git"}'
+        'database_companion @ {ref = "0.1.0", git = "https://github.com/Envrio-hub/LibCompanion.git"}'
     ],
     classifiers=[  
         'Development Status :: 4 - Beta',
