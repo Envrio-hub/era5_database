@@ -12,7 +12,8 @@ setup(
         'sqlalchemy>=2.0.37',
         'mysql-connector-python>=9.2.0',
         'pydantic>=2.10.6',
-        'influxdb-client>=1.48.0'
+        'influxdb-client>=1.48.0',
+        'database_companion @ git+https://github.com/Envrio-hub/LibCompanion.git@0.1.0#egg=database_companion'
     ],
     classifiers=[  
         'Development Status :: 4 - Beta',
