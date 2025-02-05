@@ -10,7 +10,6 @@ setup(
     python_requires='>=3.12',
     install_requires=[  
         'sqlalchemy>=2.0.37',
-        'pydantic>=2.5.2',
         'aws_utils @ {ref = "1.1.0", git = "https://github.com/Envrio-hub/aws_utils.git"}',
         'mysql-connector-python>=9.2.0',
         'pydantic>=2.10.6',
