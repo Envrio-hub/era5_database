@@ -1,7 +1,7 @@
-__version__='0.1.1'
+__version__='0.1.2'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-02-04'
+__last_updated__='2025-02-05'
 
 from database import models, schemas, engine
 from sqlalchemy.orm import Session
@@ -54,6 +54,12 @@ class Variables:
     def add(parameter: schemas.VariablesCreate, db: Session = None):
         new_parameter = models.Variables(abbrev=parameter.abbrev, long_name=parameter.long_name, standar_name=parameter.standar_name, units=parameter.units)
         db.add(new_parameter)
+
+    @staticmethod
+    @db_decorator.session_handler_query
+    def get_all(db: Session = None):
+        result = db.execute(select(models.Variables))
+        return result.scalars().all()
 
     @staticmethod
     @dtype_validator.validate_str('abbrev')
