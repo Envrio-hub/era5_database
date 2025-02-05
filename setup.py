@@ -14,7 +14,7 @@ setup(
         'pydantic>=2.10.6',
         'influxdb-client>=1.48.0',
         'database_companion @ git+https://github.com/Envrio-hub/LibCompanion.git@0.1.0#egg=database_companion',
-        'aws_utils @ git+https://github.com/Envrio-hub/aws_utils.git@0.1.0#egg=aws_utils'
+        'aws_utils @ git+https://github.com/Envrio-hub/aws_utils.git@1.1.0#egg=aws_utils'
     ],
     classifiers=[  
         'Development Status :: 4 - Beta',
