@@ -23,19 +23,19 @@ class User:
     @dtype_validator.validate_str('aws_user_name')
     @db_decorator.session_handler_query
     def get_by_name(name: str, db: Session = None):
-        return db.execute(select(models.Users).filter_by(aws_user_name=name)).one_or_none()
+        return db.execute(select(models.Users).filter_by(aws_user_name=name)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_int('user_id')
     @db_decorator.session_handler_query
     def get_by_id(user_id: int, db: Session = None):
-        return db.execute(select(models.Users).filter_by(user_id=user_id)).one_or_none()
+        return db.execute(select(models.Users).filter_by(user_id=user_id)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_str('email')
     @db_decorator.session_handler_query
     def get_by_email(email: str, db: Session = None):
-        return db.execute(select(models.Users).filter_by(email=email)).one_or_none()
+        return db.execute(select(models.Users).filter_by(email=email)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_str('aws_user_name')
@@ -65,19 +65,19 @@ class Variables:
     @dtype_validator.validate_str('abbrev')
     @db_decorator.session_handler_query
     def get_by_abbrev(abbrev: str, db: Session = None):
-        return db.execute(select(models.Variables).filter_by(abbrev = abbrev)).one_or_none()
+        return db.execute(select(models.Variables).filter_by(abbrev = abbrev)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_int('variable_id')
     @db_decorator.session_handler_query
     def get_by_variable_id(variable_id: int, db: Session = None):
-        return db.execute(select(models.Variables).filter_by(variable_id = variable_id)).one_or_none()
+        return db.execute(select(models.Variables).filter_by(variable_id = variable_id)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_str('long_name')
     @db_decorator.session_handler_query
     def get_by_long_name(long_name: str, db: Session = None):
-        return db.execute(select(models.Variables).filter_by(long_name = long_name)).one_or_none()
+        return db.execute(select(models.Variables).filter_by(long_name = long_name)).scalars().one_or_none()
     
     @staticmethod
     @dtype_validator.validate_str('abbrev')
@@ -114,13 +114,13 @@ class InfluxMapping:
     @db_decorator.session_handler_query
     def get_by_lat_and_long_range(lat_min: float, lat_max: float, long_min: float, long_max: float, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude >= long_min, models.InfluxMapping.longitude <= long_max,
-                                                                  models.InfluxMapping.latitude >= lat_min, models.InfluxMapping.latitude <= lat_max))).all()
+                                                                  models.InfluxMapping.latitude >= lat_min, models.InfluxMapping.latitude <= lat_max))).scalars().all()
 
     @staticmethod
     @dtype_validator.validate_decimal('latitude', 'longitude')
     @db_decorator.session_handler_query
     def get_by_lat_and_long(latitude: float,longitude: float, db: Session = None):
-        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude))).all()
+        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude))).scalars().all()
     
     @staticmethod
     @dtype_validator.validate_list('measurement')
@@ -133,4 +133,4 @@ class InfluxMapping:
     @dtype_validator.validate_str('measurement')
     @db_decorator.session_handler_query
     def get_by_lat_and_long_and_measurement(latitude: float,longitude: float,measurement: str, db: Session = None):
-        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).one_or_none()
+        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).scalars().one_or_none()

@@ -1,7 +1,7 @@
 __version__='0.1.2'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-02-06'
+__last_updated__='2025-02-0'
 
 from pydantic import BaseModel
 from databases_companion.enum_variables import AccountType
