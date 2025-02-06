@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-__version__='0.1.1'
+__version__='0.1.2'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2025-02-04'
+__last_updated__='2025-02-06'
 
 # from engine import Base
 from database.engine import Base
@@ -38,6 +38,8 @@ class InfluxMapping(Base):
     measurement: Mapped[str] = mapped_column(ForeignKey('variables.abbrev', ondelete='CASCADE'), nullable=False)
     latitude: Mapped[float] = mapped_column(Numeric(10,6), nullable= False)
     longitude: Mapped[float] = mapped_column(Numeric(10,6), nullable=False)
+    start_timestamp: Mapped[float] = mapped_column(nullable=False)
+    end_timestamp: Mapped[float] = mapped_column(nullable=False)
 
 
 

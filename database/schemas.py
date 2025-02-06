@@ -1,7 +1,7 @@
-__version__='0.1.1'
+__version__='0.1.2'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-02-04'
+__last_updated__='2025-02-06'
 
 from pydantic import BaseModel
 from databases_companion.enum_variables import AccountType
@@ -25,6 +25,8 @@ class InfluxMappingBase(BaseModel):
     measurement: str
     latitude: float
     longitude: float
+    start_timestamp: float
+    end_timestamp: float
 
 # Create Models
 

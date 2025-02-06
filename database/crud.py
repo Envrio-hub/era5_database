@@ -104,6 +104,7 @@ class InfluxMapping:
         db.add(new_entry)
 
     @staticmethod
+    @db_decorator.session_handler_query
     def get_all(db: Session = None):
         result = db.execute(select(models.InfluxMapping))
         return result.scalars().all()
@@ -122,10 +123,10 @@ class InfluxMapping:
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude))).all()
     
     @staticmethod
-    @dtype_validator.validate_str('measurement')
+    @dtype_validator.validate_list('measurement')
     @db_decorator.session_handler_query
-    def get_by_measurement(measurement: str, db: Session = None):
-        return db.execute(select(models.InfluxMapping).filter_by(measurement = measurement)).all()
+    def get_by_measurement(measurement: list, db: Session = None):
+        return db.execute(select(models.InfluxMapping).where(models.InfluxMapping.measurement.in_(measurement))).scalars().all()
 
     @staticmethod
     @dtype_validator.validate_decimal('latitude', 'longitude')
