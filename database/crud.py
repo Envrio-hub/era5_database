@@ -1,7 +1,7 @@
-__version__='0.1.2'
+__version__='0.1.3'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-02-05'
+__last_updated__='2025-02-06'
 
 from database import models, schemas, engine
 from sqlalchemy.orm import Session
@@ -102,6 +102,11 @@ class InfluxMapping:
     def add(entry: schemas.InfluxMappingCreate, db: Session = None):
         new_entry = models.InfluxMapping(measurement = entry.measurement, longitude = entry.longitude, latitude = entry.latitude)
         db.add(new_entry)
+
+    @staticmethod
+    def get_all(db: Session = None):
+        result = db.execute(select(models.InfluxMapping))
+        return result.scalars().all()
 
     @staticmethod
     @dtype_validator.validate_decimal('lat_min', 'lat_max', 'long_min', 'long_max')
