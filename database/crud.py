@@ -7,6 +7,7 @@ from database import models, schemas, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import  select, and_
 from databases_companion.decorators import DatabaseDecorators, DTypeValidator
+from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
 
 db_decorator = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
 dtype_validator = DTypeValidator()
@@ -46,6 +47,30 @@ class User:
                 db.delete(result.Users)
             else:
                 return {"message": "Not Found", "errors": ["The provided name does not exist in the users table"]}, 404
+            
+class Grid:
+
+    @staticmethod
+    @db_decorator.session_handler_add_delete_update
+    def add(cell: schemas.GridCreate, db: Session = None):
+        new_cell = models.Grid(name=cell.name, longitude=cell.longitude, latitude=cell.latitude, geom=ST_GeomFromText(f'POINT({cell.longitude} {cell.latitude})', 4326))
+        db.add(new_cell)
+
+    @staticmethod
+    @dtype_validator.validate_decimal('longitude', 'latitude')
+    def find_nearest(lon_query: float, lat_query: float, db: Session = None):
+        nearest = (
+            db.query(
+                Grid,
+                ST_Distance_Sphere(
+                    models.Grid.geom,
+                    ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326)
+                ).label("distance")
+            )
+            .order_by("distance")
+            .first()
+        )
+        return nearest
 
 class Variables:
 
