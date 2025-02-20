@@ -1,12 +1,13 @@
-__version__='0.1.2'
+__version__='0.1.3'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-02-05'
+__last_updated__='2025-02-06'
 
 from database import models, schemas, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import  select, and_
 from databases_companion.decorators import DatabaseDecorators, DTypeValidator
+from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
 
 db_decorator = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
 dtype_validator = DTypeValidator()
@@ -23,19 +24,19 @@ class User:
     @dtype_validator.validate_str('aws_user_name')
     @db_decorator.session_handler_query
     def get_by_name(name: str, db: Session = None):
-        return db.execute(select(models.Users).filter_by(aws_user_name=name)).one_or_none()
+        return db.execute(select(models.Users).filter_by(aws_user_name=name)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_int('user_id')
     @db_decorator.session_handler_query
     def get_by_id(user_id: int, db: Session = None):
-        return db.execute(select(models.Users).filter_by(user_id=user_id)).one_or_none()
+        return db.execute(select(models.Users).filter_by(user_id=user_id)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_str('email')
     @db_decorator.session_handler_query
     def get_by_email(email: str, db: Session = None):
-        return db.execute(select(models.Users).filter_by(email=email)).one_or_none()
+        return db.execute(select(models.Users).filter_by(email=email)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_str('aws_user_name')
@@ -46,6 +47,30 @@ class User:
                 db.delete(result.Users)
             else:
                 return {"message": "Not Found", "errors": ["The provided name does not exist in the users table"]}, 404
+            
+class Grid:
+
+    @staticmethod
+    @db_decorator.session_handler_add_delete_update
+    def add(cell: schemas.GridCreate, db: Session = None):
+        new_cell = models.Grid(name=cell.name, longitude=cell.longitude, latitude=cell.latitude, geom=ST_GeomFromText(f'POINT({cell.longitude} {cell.latitude})', 4326))
+        db.add(new_cell)
+
+    @staticmethod
+    @dtype_validator.validate_decimal('longitude', 'latitude')
+    def find_nearest(lon_query: float, lat_query: float, db: Session = None):
+        nearest = (
+            db.query(
+                Grid,
+                ST_Distance_Sphere(
+                    models.Grid.geom,
+                    ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326)
+                ).label("distance")
+            )
+            .order_by("distance")
+            .first()
+        )
+        return nearest
 
 class Variables:
 
@@ -65,19 +90,19 @@ class Variables:
     @dtype_validator.validate_str('abbrev')
     @db_decorator.session_handler_query
     def get_by_abbrev(abbrev: str, db: Session = None):
-        return db.execute(select(models.Variables).filter_by(abbrev = abbrev)).one_or_none()
+        return db.execute(select(models.Variables).filter_by(abbrev = abbrev)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_int('variable_id')
     @db_decorator.session_handler_query
     def get_by_variable_id(variable_id: int, db: Session = None):
-        return db.execute(select(models.Variables).filter_by(variable_id = variable_id)).one_or_none()
+        return db.execute(select(models.Variables).filter_by(variable_id = variable_id)).scalars().one_or_none()
 
     @staticmethod
     @dtype_validator.validate_str('long_name')
     @db_decorator.session_handler_query
     def get_by_long_name(long_name: str, db: Session = None):
-        return db.execute(select(models.Variables).filter_by(long_name = long_name)).one_or_none()
+        return db.execute(select(models.Variables).filter_by(long_name = long_name)).scalars().one_or_none()
     
     @staticmethod
     @dtype_validator.validate_str('abbrev')
@@ -104,27 +129,33 @@ class InfluxMapping:
         db.add(new_entry)
 
     @staticmethod
+    @db_decorator.session_handler_query
+    def get_all(db: Session = None):
+        result = db.execute(select(models.InfluxMapping))
+        return result.scalars().all()
+
+    @staticmethod
     @dtype_validator.validate_decimal('lat_min', 'lat_max', 'long_min', 'long_max')
     @db_decorator.session_handler_query
     def get_by_lat_and_long_range(lat_min: float, lat_max: float, long_min: float, long_max: float, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude >= long_min, models.InfluxMapping.longitude <= long_max,
-                                                                  models.InfluxMapping.latitude >= lat_min, models.InfluxMapping.latitude <= lat_max))).all()
+                                                                  models.InfluxMapping.latitude >= lat_min, models.InfluxMapping.latitude <= lat_max))).scalars().all()
 
     @staticmethod
     @dtype_validator.validate_decimal('latitude', 'longitude')
     @db_decorator.session_handler_query
     def get_by_lat_and_long(latitude: float,longitude: float, db: Session = None):
-        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude))).all()
+        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude))).scalars().all()
     
     @staticmethod
-    @dtype_validator.validate_str('measurement')
+    @dtype_validator.validate_list('measurement')
     @db_decorator.session_handler_query
-    def get_by_measurement(measurement: str, db: Session = None):
-        return db.execute(select(models.InfluxMapping).filter_by(measurement = measurement)).all()
+    def get_by_measurement(measurement: list, db: Session = None):
+        return db.execute(select(models.InfluxMapping).where(models.InfluxMapping.measurement.in_(measurement))).scalars().all()
 
     @staticmethod
     @dtype_validator.validate_decimal('latitude', 'longitude')
     @dtype_validator.validate_str('measurement')
     @db_decorator.session_handler_query
     def get_by_lat_and_long_and_measurement(latitude: float,longitude: float,measurement: str, db: Session = None):
-        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).one_or_none()
+        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).scalars().one_or_none()

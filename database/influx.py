@@ -1,18 +1,20 @@
-__version__='1.2.0'
+__version__='1.2.1'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2023-11-16'
-__last_updated__='2025-02-03'
+__last_updated__='2025-02-17'
 
 from influxdb_client import InfluxDBClient, Bucket, BucketRetentionRules
 from influxdb_client.client.write_api import SYNCHRONOUS
-from datetime import datetime
-from typing import Union
+from datetime import datetime, timedelta
+from typing import Union, Annotated
+from pydantic.types import condecimal
 from aws_utils.aws_utils import SecretsManager
 from dotenv import load_dotenv
 from database.engine import SessionLocal
 from databases_companion.decorators import DatabaseDecorators
 from envrio_logger.logger import influxdb
 from sqlalchemy.orm import Session
+from decimal import Decimal
 import os
 
 # Load variables from the .env file
@@ -59,11 +61,13 @@ class DataManagement(InfluxConnector):
         influxdb.info(f"message: Data successfully deleted from the bucket: {self.bucket_name}, measurement: {measurement}, sensor_id: {tag}, from: {start} to: {stop}")
 
     @db_decorators.influxdb_error_handler
-    def query_data_raw(self,measurement: str,sensor_id: int,unit: str,start: Union[str, datetime],stop: Union[str, datetime] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")):
+    def query_data_raw(self,measurement: str,sensor_id: int,unit: str,
+                       start: Annotated[Decimal, condecimal(max_digits=15, decimal_places=3)] = Decimal(str(round((datetime.now() - timedelta(days=1)).timestamp(), 3))),
+                       stop: Annotated[Decimal, condecimal(max_digits=15, decimal_places=3)] = Decimal(str(round(datetime.now().timestamp(), 3)))):
         query_api = self.client.query_api()
         data_frame = query_api.query_data_frame(f'''from(bucket:"{self.bucket_name}") 
-                                                    |> range(start: {start.strftime("%Y-%m-%dT%H:%M:%SZ")}, stop: {stop.strftime("%Y-%m-%dT%H:%M:%SZ")}) 
-                                                    |> filter(fn: (r) => r["_measurement"] == "{measurement}" and r["sensor_id"] == "{str(sensor_id)}")
+                                                    |> range(start: {datetime.fromtimestamp(float(start)).strftime("%Y-%m-%dT%H:%M:%SZ")}, stop: {datetime.fromtimestamp(float(stop)).strftime("%Y-%m-%dT%H:%M:%SZ")}) 
+                                                    |> filter(fn: (r) => r["_measurement"] == "{measurement}" and r["sensor_id"] == "{sensor_id}")
                                                     |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                                                     |> keep(columns: ["_time","sensor_id", "{unit}"])''')
         influxdb.info(f"message: Data from bucket: {self.bucket_name}, measurement: {measurement}, sensor_id: {sensor_id} between: {start} and {stop} retrived successfully")
