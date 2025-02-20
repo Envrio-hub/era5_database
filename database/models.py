@@ -5,8 +5,8 @@ __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
 __last_updated__='2025-02-06'
 
-# from engine import Base
-from database.engine import Base
+from engine import Base
+# from database.engine import Base
 from sqlalchemy import ForeignKey, Numeric, String, Index, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import  Mapped, mapped_column
 from geoalchemy2 import Geometry

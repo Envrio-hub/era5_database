@@ -3,7 +3,8 @@ __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
 __last_updated__='2025-02-06'
 
-from database import models, schemas, engine
+import models, schemas, engine
+# from database import models, schemas, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import  select, and_
 from databases_companion.decorators import DatabaseDecorators, DTypeValidator
@@ -57,20 +58,17 @@ class Grid:
         db.add(new_cell)
 
     @staticmethod
-    @dtype_validator.validate_decimal('longitude', 'latitude')
+    @dtype_validator.validate_decimal('lon_query', 'lat_query')
+    @db_decorator.session_handler_query
     def find_nearest(lon_query: float, lat_query: float, db: Session = None):
-        nearest = (
-            db.query(
-                Grid,
-                ST_Distance_Sphere(
-                    models.Grid.geom,
-                    ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326)
-                ).label("distance")
+        result = (
+            db.execute(select(
+                models.Grid, ST_Distance_Sphere(models.Grid.geom, ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326))
+                .label("distance")).order_by("distance").limit(1))
             )
-            .order_by("distance")
-            .first()
-        )
-        return nearest
+        if result:
+            return result.scalars().one_or_none()
+        return None
 
 class Variables:
 
@@ -159,3 +157,5 @@ class InfluxMapping:
     @db_decorator.session_handler_query
     def get_by_lat_and_long_and_measurement(latitude: float,longitude: float,measurement: str, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).scalars().one_or_none()
+
+print()
