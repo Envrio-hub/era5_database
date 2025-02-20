@@ -6,9 +6,10 @@ __last_updated__='2025-02-06'
 import models, schemas, engine
 # from database import models, schemas, engine
 from sqlalchemy.orm import Session
-from sqlalchemy import  select, and_
+from sqlalchemy import  select, and_, func
 from databases_companion.decorators import DatabaseDecorators, DTypeValidator
-from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
+from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere, ST_Extent
+from decimal import Decimal
 
 db_decorator = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
 dtype_validator = DTypeValidator()
@@ -68,6 +69,18 @@ class Grid:
             )
         if result:
             return result.scalars().one_or_none()
+        return None
+    
+    @staticmethod
+    @db_decorator.session_handler_query
+    def get_bbox(db: Session):
+        result = db.execute(select(
+            func.Min(models.Grid.latitude), func.Max(models.Grid.latitude),
+            func.Min(models.Grid.longitude), func.Max(models.Grid.longitude)
+        )).fetchone()
+        if result:
+            min_lat, max_lat, min_long, max_long = result
+            return {"min_lat":min_lat, "max_lat":max_lat, "min_long":min_long, "max_long":max_long}
         return None
 
 class Variables:
