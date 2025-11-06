@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='era5_database',
-    version='0.1.0',
+    version='0.1.1',
     description='A library that handles the era5 database',
     author='Ioannis Tsakmakis, Nikolaos Kokkos',
     author_email='itsakmak@envrio.org, nkokkos@envrio.org',
