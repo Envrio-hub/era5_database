@@ -14,8 +14,8 @@ setup(
         'pydantic>=2.10.6',
         'influxdb-client>=1.48.0',
         'GeoAlchemy2>=0.17.1',
-        'database_companion @ git+https://github.com/Envrio-hub/LibCompanion.git@main',
-        'aws_utils @ git+https://github.com/Envrio-hub/aws_utils.git@1.1.0'
+        'databases_companion @ git+https://github.com/Envrio-hub/databases_companion.git@main',
+        'aws_utils @ git+https://github.com/Envrio-hub/aws_utils.git@main'
     ],
     classifiers=[  
         'Development Status :: 4 - Beta',
