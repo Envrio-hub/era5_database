@@ -1,7 +1,7 @@
-__version__='0.1.0'
+__version__='0.1.1'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2025-01-27'
+__last_updated__='2025-11-06'
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
@@ -14,7 +14,7 @@ import os
 load_dotenv()
 
 # Access database configuration info
-db_conf = SecretsManager().get_secret(secret_name=os.getenv('db_name1'))
+db_conf = SecretsManager().get_secret(secret_name=os.getenv('era5'))
 
 # Creating sqlalchemy engine
 try:
