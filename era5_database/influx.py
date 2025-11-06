@@ -10,7 +10,7 @@ from typing import Union, Annotated
 from pydantic.types import condecimal
 from aws_utils.aws_utils import SecretsManager
 from dotenv import load_dotenv
-from database.engine import SessionLocal
+from era5_database.engine import SessionLocal
 from databases_companion.decorators import DatabaseDecorators
 from envrio_logger.logger import influxdb
 from sqlalchemy.orm import Session

@@ -1,26 +1,28 @@
 from __future__ import annotations
 
-__version__='0.1.2'
+__version__='0.1.4'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2025-02-06'
+__last_updated__='2025-11-05'
 
-# from engine import Base
-from database.engine import Base
-from sqlalchemy import ForeignKey, Numeric, String, Index, Enum as SQLAlchemyEnum
+from era5_database.engine import Base
+from sqlalchemy import ForeignKey, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import  Mapped, mapped_column
 from geoalchemy2 import Geometry
-from databases_companion.enum_variables import AccountType
+from databases_companion.enum_variables import AccountType, ConfirmationStatus
+from datetime import datetime
 
 # Users
 class Users(Base):
-    __tablename__ = 'users'
+    __tablename__='users'
 
-    user_id: Mapped[int] = mapped_column(primary_key=True,autoincrement=True)
-    aws_user_name: Mapped[str] = mapped_column(String(500), nullable=False)
-    email: Mapped[str] = mapped_column(String(500), nullable=False)
+    user_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    user_hash: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    email: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+    confirmation_status: Mapped[ConfirmationStatus] = mapped_column(SQLAlchemyEnum(ConfirmationStatus), nullable=False)
     account_type: Mapped[AccountType] = mapped_column(SQLAlchemyEnum(AccountType), nullable=False)
-    subscription_expires_in: Mapped[float] = mapped_column(nullable=False)
+    subscription_expires_in: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
 
 class Grid(Base):
     __tablename__ = "grid"

@@ -1,48 +1,54 @@
-__version__='0.1.3'
+__version__='0.1.4'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-02-06'
+__last_updated__='2025-11-06'
 
-from database import models, schemas, engine
+from era5_database import models, schemas, engine
 from sqlalchemy.orm import Session
-from sqlalchemy import  select, and_
+from sqlalchemy import  select, and_, func
 from databases_companion.decorators import DatabaseDecorators, DTypeValidator
 from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
+import hashlib
 
-db_decorator = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
-dtype_validator = DTypeValidator()
+data_base_decorators = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
+data_type_validator = DTypeValidator()
 
 class User:
 
     @staticmethod
-    @db_decorator.session_handler_add_delete_update
-    def add(user: schemas.UsersCreate, db: Session = None):
-        new_user = models.Users(aws_user_name=user.aws_user_name, email=user.email, account_type=user.account_type, subscription_expires_in=user.subscription_expires_in)
+    @data_base_decorators.session_handler_add_delete_update
+    def add(new_user: schemas.UsersCreate, db: Session = None):
+        user_sub_hash = hashlib.sha256(new_user.user_hash.encode()).hexdigest()
+        email_hash = hashlib.sha256(new_user.email.encode()).hexdigest()
+        new_user = models.Users(user_hash=user_sub_hash, email=email_hash, confirmation_status=new_user.confirmation_status,
+                                account_type=new_user.account_type, subscription_expires_in=new_user.subscription_expires_in)
         db.add(new_user)
 
     @staticmethod
-    @dtype_validator.validate_str('aws_user_name')
-    @db_decorator.session_handler_query
-    def get_by_name(name: str, db: Session = None):
-        return db.execute(select(models.Users).filter_by(aws_user_name=name)).scalars().one_or_none()
+    @data_type_validator.validate_str('user_hash')
+    @data_base_decorators.session_handler_query
+    def get_by_name(user_hush: str, db: Session = None):
+        return db.execute(select(models.Users).filter_by(user_hash=user_hush)).scalars().first()
 
     @staticmethod
-    @dtype_validator.validate_int('user_id')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_int('user_id')
+    @data_base_decorators.session_handler_query
     def get_by_id(user_id: int, db: Session = None):
-        return db.execute(select(models.Users).filter_by(user_id=user_id)).scalars().one_or_none()
+        return db.execute(select(models.Users).filter_by(user_id=user_id)).scalars().first()
 
     @staticmethod
-    @dtype_validator.validate_str('email')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_str('email')
+    @data_base_decorators.session_handler_query
     def get_by_email(email: str, db: Session = None):
-        return db.execute(select(models.Users).filter_by(email=email)).scalars().one_or_none()
+        email_hash = hashlib.sha256(email.encode()).hexdigest()
+        return db.execute(select(models.Users).filter_by(email=email_hash)).scalars().first()
 
     @staticmethod
-    @dtype_validator.validate_str('aws_user_name')
-    @db_decorator.session_handler_add_delete_update
-    def delete_by_name(name: str, db: Session = None):
-            result = db.execute(select(models.Users).filter_by(aws_user_name=name)).one_or_none()
+    @data_type_validator.validate_str('email')
+    @data_base_decorators.session_handler_add_delete_update
+    def delete_by_email(email: str, db: Session = None):
+            email_hash = hashlib.sha256(email.encode()).hexdigest()
+            result = db.execute(select(models.Users).filter_by(aws_user_name=email_hash)).one_or_none()
             if result is not None:
                 db.delete(result.Users)
             else:
@@ -51,68 +57,77 @@ class User:
 class Grid:
 
     @staticmethod
-    @db_decorator.session_handler_add_delete_update
+    @data_base_decorators.session_handler_add_delete_update
     def add(cell: schemas.GridCreate, db: Session = None):
         new_cell = models.Grid(name=cell.name, longitude=cell.longitude, latitude=cell.latitude, geom=ST_GeomFromText(f'POINT({cell.longitude} {cell.latitude})', 4326))
         db.add(new_cell)
 
     @staticmethod
-    @dtype_validator.validate_decimal('longitude', 'latitude')
+    @data_type_validator.validate_decimal('lon_query', 'lat_query')
+    @data_base_decorators.session_handler_query
     def find_nearest(lon_query: float, lat_query: float, db: Session = None):
-        nearest = (
-            db.query(
-                Grid,
-                ST_Distance_Sphere(
-                    models.Grid.geom,
-                    ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326)
-                ).label("distance")
+        result = (
+            db.execute(select(
+                models.Grid, ST_Distance_Sphere(models.Grid.geom, ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326))
+                .label("distance")).order_by("distance").limit(1))
             )
-            .order_by("distance")
-            .first()
-        )
-        return nearest
+        if result:
+            return result.scalars().one_or_none()
+        return None
+    
+    @staticmethod
+    @data_base_decorators.session_handler_query
+    def get_bbox(db: Session):
+        result = db.execute(select(
+            func.Min(models.Grid.latitude), func.Max(models.Grid.latitude),
+            func.Min(models.Grid.longitude), func.Max(models.Grid.longitude)
+        )).fetchone()
+        if result:
+            min_lat, max_lat, min_long, max_long = result
+            return {"min_lat":min_lat, "max_lat":max_lat, "min_long":min_long, "max_long":max_long}
+        return None
 
 class Variables:
 
     @staticmethod
-    @db_decorator.session_handler_add_delete_update
+    @data_base_decorators.session_handler_add_delete_update
     def add(parameter: schemas.VariablesCreate, db: Session = None):
         new_parameter = models.Variables(abbrev=parameter.abbrev, long_name=parameter.long_name, standar_name=parameter.standar_name, units=parameter.units)
         db.add(new_parameter)
 
     @staticmethod
-    @db_decorator.session_handler_query
+    @data_base_decorators.session_handler_query
     def get_all(db: Session = None):
         result = db.execute(select(models.Variables))
         return result.scalars().all()
 
     @staticmethod
-    @dtype_validator.validate_str('abbrev')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_str('abbrev')
+    @data_base_decorators.session_handler_query
     def get_by_abbrev(abbrev: str, db: Session = None):
         return db.execute(select(models.Variables).filter_by(abbrev = abbrev)).scalars().one_or_none()
 
     @staticmethod
-    @dtype_validator.validate_int('variable_id')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_int('variable_id')
+    @data_base_decorators.session_handler_query
     def get_by_variable_id(variable_id: int, db: Session = None):
         return db.execute(select(models.Variables).filter_by(variable_id = variable_id)).scalars().one_or_none()
 
     @staticmethod
-    @dtype_validator.validate_str('long_name')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_str('long_name')
+    @data_base_decorators.session_handler_query
     def get_by_long_name(long_name: str, db: Session = None):
         return db.execute(select(models.Variables).filter_by(long_name = long_name)).scalars().one_or_none()
     
     @staticmethod
-    @dtype_validator.validate_str('abbrev')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_str('abbrev')
+    @data_base_decorators.session_handler_query
     def get_unit_by_abbrev(abbrev: str, db: Session):
         result = db.execute(select(models.Variables).where(models.Variables.abbrev == abbrev))
         variable = result.scalars().first()
         return variable.units if variable else None
 
-    @db_decorator.session_handler_add_delete_update
+    @data_base_decorators.session_handler_add_delete_update
     def delete_by_abbrev(abbrev: str, db: Session = None):
             result = db.execute(select(models.Variables).filter_by(abbrev=abbrev)).one_or_none()
             if result is not None:
@@ -123,39 +138,41 @@ class Variables:
 class InfluxMapping:
 
     @staticmethod
-    @db_decorator.session_handler_add_delete_update
+    @data_base_decorators.session_handler_add_delete_update
     def add(entry: schemas.InfluxMappingCreate, db: Session = None):
         new_entry = models.InfluxMapping(measurement = entry.measurement, longitude = entry.longitude, latitude = entry.latitude)
         db.add(new_entry)
 
     @staticmethod
-    @db_decorator.session_handler_query
+    @data_base_decorators.session_handler_query
     def get_all(db: Session = None):
         result = db.execute(select(models.InfluxMapping))
         return result.scalars().all()
 
     @staticmethod
-    @dtype_validator.validate_decimal('lat_min', 'lat_max', 'long_min', 'long_max')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_decimal('lat_min', 'lat_max', 'long_min', 'long_max')
+    @data_base_decorators.session_handler_query
     def get_by_lat_and_long_range(lat_min: float, lat_max: float, long_min: float, long_max: float, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude >= long_min, models.InfluxMapping.longitude <= long_max,
                                                                   models.InfluxMapping.latitude >= lat_min, models.InfluxMapping.latitude <= lat_max))).scalars().all()
 
     @staticmethod
-    @dtype_validator.validate_decimal('latitude', 'longitude')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_decimal('latitude', 'longitude')
+    @data_base_decorators.session_handler_query
     def get_by_lat_and_long(latitude: float,longitude: float, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude))).scalars().all()
     
     @staticmethod
-    @dtype_validator.validate_list('measurement')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_list('measurement')
+    @data_base_decorators.session_handler_query
     def get_by_measurement(measurement: list, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(models.InfluxMapping.measurement.in_(measurement))).scalars().all()
 
     @staticmethod
-    @dtype_validator.validate_decimal('latitude', 'longitude')
-    @dtype_validator.validate_str('measurement')
-    @db_decorator.session_handler_query
+    @data_type_validator.validate_decimal('latitude', 'longitude')
+    @data_type_validator.validate_str('measurement')
+    @data_base_decorators.session_handler_query
     def get_by_lat_and_long_and_measurement(latitude: float,longitude: float,measurement: str, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).scalars().one_or_none()
+
+print()
