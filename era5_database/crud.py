@@ -1,12 +1,12 @@
-__version__='0.1.4'
+__version__='0.1.5'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-11-06'
+__last_updated__='2025-11-17'
 
 from era5_database import models, schemas, engine
 from sqlalchemy.orm import Session
-from sqlalchemy import  select, and_, func
-from databases_companion.decorators import DatabaseDecorators, DTypeValidator
+from sqlalchemy import  select, and_, func, update
+from databases_companion.decorators import DatabaseDecorators, DTypeValidator, ConfirmationStatus
 from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
 import hashlib
 
@@ -46,9 +46,16 @@ class User:
     @staticmethod
     @data_type_validator.validate_str('email')
     @data_base_decorators.session_handler_add_delete_update
+    def update_confirmation_status_by_email(email: str, status: ConfirmationStatus, db: Session = None):
+        email_hash = hashlib.sha256(email.encode()).hexdigest()
+        db.execute(update(models.Users).where(models.Users.email==email_hash).values(confirmation_status=status))
+
+    @staticmethod
+    @data_type_validator.validate_str('email')
+    @data_base_decorators.session_handler_add_delete_update
     def delete_by_email(email: str, db: Session = None):
             email_hash = hashlib.sha256(email.encode()).hexdigest()
-            result = db.execute(select(models.Users).filter_by(aws_user_name=email_hash)).one_or_none()
+            result = db.execute(select(models.Users).filter_by(email=email_hash)).scalars().first()
             if result is not None:
                 db.delete(result.Users)
             else:
