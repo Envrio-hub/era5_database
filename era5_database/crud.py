@@ -1,12 +1,13 @@
-__version__='0.1.5'
+__version__='0.1.6'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-11-17'
+__last_updated__='2025-11-18'
 
 from era5_database import models, schemas, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import  select, and_, func, update
-from databases_companion.decorators import DatabaseDecorators, DTypeValidator, ConfirmationStatus
+from databases_companion.decorators import DatabaseDecorators, DTypeValidator
+from databases_companion.enum_variables import ConfirmationStatus
 from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
 import hashlib
 
@@ -56,10 +57,8 @@ class User:
     def delete_by_email(email: str, db: Session = None):
             email_hash = hashlib.sha256(email.encode()).hexdigest()
             result = db.execute(select(models.Users).filter_by(email=email_hash)).scalars().first()
-            if result is not None:
-                db.delete(result.Users)
-            else:
-                return {"message": "Not Found", "errors": ["The provided name does not exist in the users table"]}, 404
+            if result:
+                db.delete(result)
             
 class Grid:
 
@@ -181,5 +180,3 @@ class InfluxMapping:
     @data_base_decorators.session_handler_query
     def get_by_lat_and_long_and_measurement(latitude: float,longitude: float,measurement: str, db: Session = None):
         return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).scalars().one_or_none()
-
-print()
