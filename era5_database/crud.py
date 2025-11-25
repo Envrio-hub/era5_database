@@ -6,7 +6,8 @@ __last_updated__='2025-11-17'
 from era5_database import models, schemas, engine
 from sqlalchemy.orm import Session
 from sqlalchemy import  select, and_, func, update
-from databases_companion.decorators import DatabaseDecorators, DTypeValidator, ConfirmationStatus
+from databases_companion.decorators import DatabaseDecorators, DTypeValidator
+from databases_companion.enum_variables import ConfirmationStatus
 from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
 import hashlib
 

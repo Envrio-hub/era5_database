@@ -18,7 +18,7 @@ db_conf = SecretsManager().get_secret(secret_name=os.getenv('era5'))
 
 # Creating sqlalchemy engine
 try:
-    engine = create_engine(url=f'{db_conf["DBAPI"]}://{db_conf["username"]}:{db_conf['password']}@{db_conf["host-ip"]}/{os.getenv('db_name1')}',
+    engine = create_engine(url=f'{db_conf["DBAPI"]}://{db_conf["username"]}:{db_conf['password']}@{db_conf["host-ip"]}/{os.getenv('era5')}',
                         pool_size=30, max_overflow=5, pool_recycle=7200)
 except Exception as e:
     alchemy.error(f"Error occurred during engine creation: {str(e)}")
