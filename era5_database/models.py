@@ -3,7 +3,7 @@ from __future__ import annotations
 __version__='0.1.5'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2025-11-16'
+__last_updated__='2025-12-16'
 
 from era5_database.engine import Base
 from sqlalchemy import ForeignKey, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum
@@ -44,9 +44,10 @@ class Variables(Base):
     variables_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     abbrev: Mapped[str] = mapped_column(String(60), unique=True, nullable=False)
     long_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    standar_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    standard_name: Mapped[str] = mapped_column(String(100), nullable=False)
     units: Mapped[str] = mapped_column(String(100), nullable=False)
     variable_source_type: Mapped[MeasurementCategory] = mapped_column(SQLAlchemyEnum(MeasurementCategory), nullable=False, default=MeasurementCategory.sensor)
+    cell_methods: Mapped[str] = mapped_column(String(255), nullable=True)
 
 class InfluxMapping(Base):
     __tablename__ = 'influx_mapping'
