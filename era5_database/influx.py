@@ -1,12 +1,12 @@
-__version__='1.2.1'
+__version__='1.2.2'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2023-11-16'
-__last_updated__='2025-02-17'
+__last_updated__='2025-12-05'
 
 from influxdb_client import InfluxDBClient, Bucket, BucketRetentionRules
 from influxdb_client.client.write_api import SYNCHRONOUS
 from datetime import datetime, timedelta
-from typing import Union, Annotated
+from typing import Union, Annotated, List
 from pydantic.types import condecimal
 from aws_utils.aws_utils import SecretsManager
 from dotenv import load_dotenv
@@ -61,16 +61,17 @@ class DataManagement(InfluxConnector):
         influxdb.info(f"message: Data successfully deleted from the bucket: {self.bucket_name}, measurement: {measurement}, sensor_id: {tag}, from: {start} to: {stop}")
 
     @db_decorators.influxdb_error_handler
-    def query_data_raw(self,measurement: str,sensor_id: int,unit: str,
+    def query_data_raw(self,measurements: List, sensor_ids: List,
                        start: Annotated[Decimal, condecimal(max_digits=15, decimal_places=3)] = Decimal(str(round((datetime.now() - timedelta(days=1)).timestamp(), 3))),
                        stop: Annotated[Decimal, condecimal(max_digits=15, decimal_places=3)] = Decimal(str(round(datetime.now().timestamp(), 3)))):
         query_api = self.client.query_api()
-        data_frame = query_api.query_data_frame(f'''from(bucket:"{self.bucket_name}") 
+        m_conditions = " or ".join([f'r["_measurement"] == "{m}"' for m in measurements])
+        s_conditions = " or ".join([f'r["sensor_id"] == "{sid}"' for sid in sensor_ids])
+        data_frame = query_api.query_data_frame(f'''from(bucket:"{self.bucket_name}")
                                                     |> range(start: {datetime.fromtimestamp(float(start)).strftime("%Y-%m-%dT%H:%M:%SZ")}, stop: {datetime.fromtimestamp(float(stop)).strftime("%Y-%m-%dT%H:%M:%SZ")}) 
-                                                    |> filter(fn: (r) => r["_measurement"] == "{measurement}" and r["sensor_id"] == "{sensor_id}")
-                                                    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                                                    |> keep(columns: ["_time","sensor_id", "{unit}"])''')
-        influxdb.info(f"message: Data from bucket: {self.bucket_name}, measurement: {measurement}, sensor_id: {sensor_id} between: {start} and {stop} retrived successfully")
+                                                    |> filter(fn: (r) => ({m_conditions}) and ({s_conditions}))
+                                                    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")''')
+        influxdb.info(f"message: Data from bucket: {self.bucket_name}, measurement: {measurements}, sensor_id: {sensor_ids} between: {start} and {stop} retrived successfully")
         return data_frame
     
     @db_decorators.influxdb_error_handler

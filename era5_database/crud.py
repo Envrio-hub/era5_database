@@ -1,14 +1,15 @@
-__version__='0.1.5'
+__version__='0.1.7'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-11-17'
+__last_updated__='2025-12-15'
 
 from era5_database import models, schemas, engine
 from sqlalchemy.orm import Session
-from sqlalchemy import  select, and_, func, update
-from databases_companion.decorators import DatabaseDecorators, DTypeValidator
+from sqlalchemy import  select, and_, func, update, tuple_
 from databases_companion.enum_variables import ConfirmationStatus
+from databases_companion.decorators import DatabaseDecorators, DTypeValidator
 from geoalchemy2.functions import ST_GeomFromText, ST_Distance_Sphere
+from typing import List
 import hashlib
 
 data_base_decorators = DatabaseDecorators(SessionLocal=engine.SessionLocal, Session=Session)
@@ -57,10 +58,8 @@ class User:
     def delete_by_email(email: str, db: Session = None):
             email_hash = hashlib.sha256(email.encode()).hexdigest()
             result = db.execute(select(models.Users).filter_by(email=email_hash)).scalars().first()
-            if result is not None:
-                db.delete(result.Users)
-            else:
-                return {"message": "Not Found", "errors": ["The provided name does not exist in the users table"]}, 404
+            if result:
+                db.delete(result)
             
 class Grid:
 
@@ -78,11 +77,9 @@ class Grid:
             db.execute(select(
                 models.Grid, ST_Distance_Sphere(models.Grid.geom, ST_GeomFromText(f'POINT({lon_query} {lat_query})', 4326))
                 .label("distance")).order_by("distance").limit(1))
-            )
-        if result:
-            return result.scalars().one_or_none()
-        return None
-    
+            ).scalars().first()
+        return result
+
     @staticmethod
     @data_base_decorators.session_handler_query
     def get_bbox(db: Session):
@@ -178,9 +175,16 @@ class InfluxMapping:
 
     @staticmethod
     @data_type_validator.validate_decimal('latitude', 'longitude')
-    @data_type_validator.validate_str('measurement')
+    @data_type_validator.validate_str('measurements')
     @data_base_decorators.session_handler_query
-    def get_by_lat_and_long_and_measurement(latitude: float,longitude: float,measurement: str, db: Session = None):
-        return db.execute(select(models.InfluxMapping).where(and_(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement == measurement))).scalars().one_or_none()
-
-print()
+    def get_by_lat_and_long_and_measurements(latitude: float, longitude: float, measurements: list, db: Session = None):
+        return db.execute(select(models.InfluxMapping).where(models.InfluxMapping.longitude == longitude, models.InfluxMapping.latitude == latitude, models.InfluxMapping.measurement.in_(measurements))).scalars().all()
+    
+    @staticmethod
+    @data_type_validator.validate_list('latitude_list', 'longitude_list', 'measurements')
+    @data_base_decorators.session_handler_query
+    def get_influx_ids_by_lats_and_longs_and_measurements(latitude_list: List[float], longitude_list: List[float], measurements: List[str], db: Session = None):
+        pairs = list(zip(longitude_list, latitude_list))
+        return db.execute(select(models.InfluxMapping.influx_id).where(
+            tuple_(models.InfluxMapping.longitude, models.InfluxMapping.latitude).in_(pairs),
+            models.InfluxMapping.measurement.in_(measurements))).scalars().all()

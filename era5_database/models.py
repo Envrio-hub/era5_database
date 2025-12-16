@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-__version__='0.1.4'
+__version__='0.1.5'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2025-11-05'
+__last_updated__='2025-11-16'
 
 from era5_database.engine import Base
 from sqlalchemy import ForeignKey, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum
 from sqlalchemy.orm import  Mapped, mapped_column
 from geoalchemy2 import Geometry
-from databases_companion.enum_variables import AccountType, ConfirmationStatus
+from databases_companion.enum_variables import AccountType, ConfirmationStatus, MeasurementCategory
 from datetime import datetime
 
 # Users
@@ -46,6 +46,7 @@ class Variables(Base):
     long_name: Mapped[str] = mapped_column(String(100), nullable=False)
     standar_name: Mapped[str] = mapped_column(String(100), nullable=False)
     units: Mapped[str] = mapped_column(String(100), nullable=False)
+    variable_source_type: Mapped[MeasurementCategory] = mapped_column(SQLAlchemyEnum(MeasurementCategory), nullable=False, default=MeasurementCategory.sensor)
 
 class InfluxMapping(Base):
     __tablename__ = 'influx_mapping'
