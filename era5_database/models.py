@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-__version__='0.1.5'
+__version__='0.1.6'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2025-12-16'
+__last_updated__='2026-03-02'
 
 from era5_database.engine import Base
-from sqlalchemy import ForeignKey, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum
+from sqlalchemy import ForeignKey, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum, UniqueConstraint
 from sqlalchemy.orm import  Mapped, mapped_column
 from geoalchemy2 import Geometry
 from databases_companion.enum_variables import AccountType, ConfirmationStatus, MeasurementCategory
@@ -58,6 +58,15 @@ class InfluxMapping(Base):
     longitude: Mapped[float] = mapped_column(Numeric(10,6), nullable=False)
     start_timestamp: Mapped[float] = mapped_column(nullable=False)
     end_timestamp: Mapped[float] = mapped_column(nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            "measurement",
+            "latitude",
+            "longitude",
+            name="uq_influx_mapping_measurement_lat_lon"
+        ),
+    )
 
 
 
