@@ -1,7 +1,7 @@
-__version__='0.1.5'
+__version__='0.1.6'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2025-11-06'
+__last_updated__='2026-06-17'
 
 from pydantic import BaseModel, condecimal
 from typing import Annotated
@@ -21,6 +21,7 @@ class GridBase(BaseModel):
     name: str
     latitude: Annotated[Decimal, condecimal(max_digits=10, decimal_places=6)]
     longitude: Annotated[Decimal, condecimal(max_digits=10, decimal_places=6)]
+    mean_elevation: int | None = None
 
 class VariablesBase(BaseModel):
     

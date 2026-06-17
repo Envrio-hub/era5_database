@@ -1,7 +1,7 @@
-__version__='0.1.8'
+__version__='0.1.9'
 __authors__=['Ioannis Tsakmakis']
 __date_created__='2025-01-30'
-__last_updated__='2026-02-02'
+__last_updated__='2026-06-17'
 
 from era5_database import models, schemas, engine
 from sqlalchemy.orm import Session
@@ -66,7 +66,7 @@ class Grid:
     @staticmethod
     @data_base_decorators.session_handler_add_delete_update
     def add(cell: schemas.GridCreate, db: Session = None):
-        new_cell = models.Grid(name=cell.name, longitude=cell.longitude, latitude=cell.latitude, geom=ST_GeomFromText(f'POINT({cell.longitude} {cell.latitude})', 4326))
+        new_cell = models.Grid(**cell.model_dump(), geom=ST_GeomFromText(f'POINT({cell.longitude} {cell.latitude})', 4326))
         db.add(new_cell)
 
     @staticmethod
@@ -91,6 +91,13 @@ class Grid:
             min_lat, max_lat, min_long, max_long = result
             return {"min_lat":min_lat, "max_lat":max_lat, "min_long":min_long, "max_long":max_long}
         return None
+    
+    @staticmethod
+    @data_type_validator.validate_decimal('longitude', 'latitude')
+    @data_type_validator.validate_int('elevation')
+    @data_base_decorators.session_handler_add_delete_update
+    def update_elevation_by_lon_and_lat(longitude: float, latitude: float, elevation: int, db: Session = None):
+        db.execute(update(models.Grid).where(models.Grid.longitude==longitude, models.Grid.latitude==latitude).values(mean_elevation=elevation))
 
 class Variables:
 

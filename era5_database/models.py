@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-__version__='0.1.6'
+__version__='0.1.7'
 __author__=['Ioannis Tsakmakis']
 __date_created__='2025-01-27'
-__last_updated__='2026-03-02'
+__last_updated__='2026-06-17'
 
 from era5_database.engine import Base
-from sqlalchemy import ForeignKey, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum, UniqueConstraint
+from sqlalchemy import ForeignKey, Integer, Numeric, String, Index, DateTime, Enum as SQLAlchemyEnum, UniqueConstraint
 from sqlalchemy.orm import  Mapped, mapped_column
 from geoalchemy2 import Geometry
 from databases_companion.enum_variables import AccountType, ConfirmationStatus, MeasurementCategory
@@ -31,6 +31,7 @@ class Grid(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=True)
     latitude: Mapped[float] = mapped_column(Numeric(10,6), nullable= False)
     longitude: Mapped[float] = mapped_column(Numeric(10,6), nullable=False)
+    mean_elevation: Mapped[int] = mapped_column(Integer, nullable=True)
     geom: Mapped[Geometry] = mapped_column(Geometry("POINT", srid=4326), nullable=False)  # Spatial column
 
 # Add a spatial index (only works with MySQL spatial support)
